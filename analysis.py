@@ -76,9 +76,9 @@ ax2 = ax1.twinx()
 ax2.plot(daily['date'], daily['revenue'], color=ACCENT2, linestyle='--', marker='s', markersize=5, label='Выручка')
 ax2.set_ylabel('Выручка', color=ACCENT2)
 ax2.tick_params(axis='y', labelcolor=ACCENT2)
-
+# СТАЛО:
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
-ax1.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+ax1.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=0))  # раз в неделю, по понедельникам
 fig.autofmt_xdate(rotation=45)
 
 lines1, labels1 = ax1.get_legend_handles_labels()
