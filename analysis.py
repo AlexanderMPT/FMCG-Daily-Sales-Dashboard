@@ -41,13 +41,11 @@ promo_share = (df[df['promotion_flag'] == 1]['units_sold'].sum() / total_units *
 top_brand = df.groupby('brand')['units_sold'].sum().idxmax()
 top_sku = df.groupby('sku')['units_sold'].sum().idxmax()
 
-# Динамика по дням
 daily = df.groupby('date').agg(
     units_sold=('units_sold', 'sum'),
     revenue=('revenue', 'sum')
 ).reset_index()
 
-# Агрегаты по категориям и каналам для графиков
 brand_sales = df.groupby('brand')['units_sold'].sum().sort_values(ascending=False)
 channel_sales = df.groupby('channel')['units_sold'].sum()
 region_sales = df.groupby('region')['units_sold'].sum()
@@ -55,7 +53,6 @@ segment_sales = df.groupby('segment')['units_sold'].sum()
 promo_effect = df.groupby('promotion_flag')['units_sold'].sum()
 top_skus = df.groupby('sku')['units_sold'].sum().nlargest(10)
 
-# Данные для тепловой карты: средняя цена по дням недели и каналам
 df['weekday'] = df['date'].dt.day_name()
 weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 pivot = df.pivot_table(values='price_unit', index='weekday', columns='channel', aggfunc='mean')
@@ -68,37 +65,44 @@ print(f"Доля промо-продаж: {promo_share:.1f}%")
 print(f"Топ-бренд: {top_brand}")
 print(f"Топ-SKU: {top_sku}")
 
-# ===================== ГРАФИК 1: Динамика продаж и выручки =====================
-fig, ax1 = plt.subplots(figsize=(14, 5))
-ax1.plot(daily['date'], daily['units_sold'], color=ACCENT, marker='o', markersize=3, label='Продано единиц')
+# ===================== ГРАФИК 1: Динамика продаж и выручки (увеличенный масштаб) =====================
+fig, ax1 = plt.subplots(figsize=(18, 6))
+ax1.plot(daily['date'], daily['units_sold'], color=ACCENT, marker='o', markersize=4, label='Продано единиц')
 ax1.set_ylabel('Продано единиц', color=ACCENT)
 ax1.tick_params(axis='y', labelcolor=ACCENT)
 ax1.yaxis.grid(True)
 
 ax2 = ax1.twinx()
-ax2.plot(daily['date'], daily['revenue'], color=ACCENT2, linestyle='--', marker='s', markersize=4, label='Выручка')
+ax2.plot(daily['date'], daily['revenue'], color=ACCENT2, linestyle='--', marker='s', markersize=5, label='Выручка')
 ax2.set_ylabel('Выручка', color=ACCENT2)
 ax2.tick_params(axis='y', labelcolor=ACCENT2)
 
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
-ax1.xaxis.set_major_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_locator(mdates.DayLocator(interval=1))
 fig.autofmt_xdate(rotation=45)
 
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', facecolor='#1a2f4e', edgecolor='#4A6080')
-ax1.set_title('Динамика продаж и выручки по дням')
+ax1.set_title('Динамика продаж и выручки по дням (детальный масштаб)')
 fig.tight_layout()
 plt.savefig('images/01_sales_revenue_dynamics.png', dpi=150, bbox_inches='tight')
 plt.close()
 
 # ===================== ГРАФИК 2: Продажи по брендам =====================
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(12, 6))   # чуть шире, чтобы подписи не сжимались
 bars = ax.bar(brand_sales.index, brand_sales.values, color=ACCENT)
+max_val = brand_sales.max()
+offset = max_val * 0.03
 for bar, val in zip(bars, brand_sales.values):
-    ax.text(bar.get_x() + bar.get_width()/2, val + 0.5, str(val), ha='center', color='white')
+    ax.text(bar.get_x() + bar.get_width()/2, val + offset, str(val), ha='center', color='white', fontsize=9)
+ax.set_ylim(top=ax.get_ylim()[1] * 1.12)
 ax.set_title('Продажи по брендам (единиц)')
 ax.grid(axis='y', alpha=0.4)
+
+# Поворачиваем подписи на 45 градусов, выравниваем по правому краю и уменьшаем шрифт
+ax.set_xticklabels(brand_sales.index, rotation=45, ha='right', fontsize=8)
+
 fig.tight_layout()
 plt.savefig('images/02_brand_sales.png', dpi=150, bbox_inches='tight')
 plt.close()
@@ -121,8 +125,11 @@ plt.close()
 # ===================== ГРАФИК 4: Продажи по регионам =====================
 fig, ax = plt.subplots(figsize=(10, 6))
 bars = ax.bar(region_sales.index, region_sales.values, color=ACCENT2)
+max_val = region_sales.max()
+offset = max_val * 0.03
 for bar, val in zip(bars, region_sales.values):
-    ax.text(bar.get_x() + bar.get_width()/2, val + 0.5, str(val), ha='center', color='white')
+    ax.text(bar.get_x() + bar.get_width()/2, val + offset, str(val), ha='center', color='white', fontsize=9)
+ax.set_ylim(top=ax.get_ylim()[1] * 1.12)
 ax.set_title('Продажи по регионам')
 ax.grid(axis='y', alpha=0.4)
 fig.tight_layout()
@@ -134,8 +141,11 @@ promo_labels = ['Без промо', 'С промо']
 promo_values = [promo_effect.get(0, 0), promo_effect.get(1, 0)]
 fig, ax = plt.subplots(figsize=(7, 5))
 bars = ax.bar(promo_labels, promo_values, color=[ACCENT, ACCENT2])
+max_val = max(promo_values) if max(promo_values) > 0 else 1
+offset = max_val * 0.03
 for bar, val in zip(bars, promo_values):
-    ax.text(bar.get_x() + bar.get_width()/2, val + 0.5, str(val), ha='center', color='white')
+    ax.text(bar.get_x() + bar.get_width()/2, val + offset, str(val), ha='center', color='white', fontsize=9)
+ax.set_ylim(top=ax.get_ylim()[1] * 1.15)
 ax.set_title('Продажи с промо и без')
 ax.grid(axis='y', alpha=0.4)
 fig.tight_layout()
@@ -147,8 +157,11 @@ top_skus_plot = top_skus.sort_values(ascending=True)
 fig, ax = plt.subplots(figsize=(11, 6))
 colors_bars = [ACCENT2 if i == len(top_skus_plot)-1 else ACCENT for i in range(len(top_skus_plot))]
 bars = ax.barh(top_skus_plot.index, top_skus_plot.values, color=colors_bars)
+max_val = top_skus_plot.max()
+offset = max_val * 0.03
 for bar, val in zip(bars, top_skus_plot.values):
-    ax.text(val + 0.5, bar.get_y() + bar.get_height()/2, str(int(val)), va='center', color='white')
+    ax.text(val + offset, bar.get_y() + bar.get_height()/2, str(int(val)), va='center', color='white', fontsize=9)
+ax.set_xlim(right=ax.get_xlim()[1] * 1.12)
 ax.set_title('Топ-10 SKU по продажам')
 ax.grid(axis='x', alpha=0.4)
 fig.tight_layout()
@@ -174,17 +187,25 @@ fig.tight_layout()
 plt.savefig('images/07_kpi_summary.png', dpi=150, bbox_inches='tight')
 plt.close()
 
-# ===================== ГРАФИК 8: Продажи по сегментам =====================
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.pie(segment_sales.values, labels=segment_sales.index, autopct='%1.1f%%',
-       colors=['#0A7EA4', '#F4A233', '#7BC8A4', '#E87E6B'], startangle=90,
-       textprops={'color': 'white', 'fontsize': 10})
+# ===================== ГРАФИК 8: Продажи по сегментам (проценты вынесены в легенду) =====================
+seg_data = segment_sales.copy()
+total_seg = seg_data.sum()
+seg_pct = (seg_data / total_seg * 100).round(1)
+seg_colors = ['#0A7EA4', '#F4A233', '#7BC8A4', '#E87E6B'][:len(seg_data)]
+
+fig, ax = plt.subplots(figsize=(7, 5))
+wedges, _ = ax.pie(seg_data.values, labels=None, colors=seg_colors,
+                   startangle=90, wedgeprops=dict(edgecolor='#0F1F3D', linewidth=2))
+legend_labels = [f'{idx}: {val} ед. ({pct}%)' for idx, val, pct in zip(seg_data.index, seg_data.values, seg_pct)]
+ax.legend(wedges, legend_labels, title="Сегменты", loc="center left",
+          bbox_to_anchor=(1, 0, 0.5, 1), facecolor='#1a2f4e', edgecolor='#4A6080',
+          labelcolor='white', title_fontsize=11)
 ax.set_title('Распределение продаж по сегментам')
 fig.tight_layout()
 plt.savefig('images/08_segment_sales.png', dpi=150, bbox_inches='tight')
 plt.close()
 
-# ===================== ГРАФИК 9: Тепловая карта средней цены (дни недели × канал) =====================
+# ===================== ГРАФИК 9: Тепловая карта средней цены =====================
 fig, ax = plt.subplots(figsize=(10, 6))
 im = ax.imshow(pivot.values, cmap='coolwarm', aspect='auto')
 ax.set_xticks(range(len(pivot.columns)))
