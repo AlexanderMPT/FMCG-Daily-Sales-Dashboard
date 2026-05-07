@@ -1,5 +1,3 @@
-# FMCG-Daily-Sales-Dashboard
-
 ## Продуктовая аналитика 
 
 ## 🛒 FMCG Sales Dashboard — интерактивный дашборд ежедневных продаж сети FMCG.  
