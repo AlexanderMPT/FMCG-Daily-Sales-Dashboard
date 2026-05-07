@@ -187,20 +187,20 @@ fig.tight_layout()
 plt.savefig('images/07_kpi_summary.png', dpi=150, bbox_inches='tight')
 plt.close()
 
-# ===================== ГРАФИК 8: Продажи по сегментам (проценты вынесены в легенду) =====================
-seg_data = segment_sales.copy()
-total_seg = seg_data.sum()
-seg_pct = (seg_data / total_seg * 100).round(1)
-seg_colors = ['#0A7EA4', '#F4A233', '#7BC8A4', '#E87E6B'][:len(seg_data)]
-
-fig, ax = plt.subplots(figsize=(7, 5))
-wedges, _ = ax.pie(seg_data.values, labels=None, colors=seg_colors,
-                   startangle=90, wedgeprops=dict(edgecolor='#0F1F3D', linewidth=2))
-legend_labels = [f'{idx}: {val} ед. ({pct}%)' for idx, val, pct in zip(seg_data.index, seg_data.values, seg_pct)]
-ax.legend(wedges, legend_labels, title="Сегменты", loc="center left",
-          bbox_to_anchor=(1, 0, 0.5, 1), facecolor='#1a2f4e', edgecolor='#4A6080',
-          labelcolor='white', title_fontsize=11)
+# ===================== ГРАФИК 8: Продажи по сегментам =====================
+seg_sorted = segment_sales.sort_values(ascending=True)
+total_seg = seg_sorted.sum()
+fig, ax = plt.subplots(figsize=(12, 7))
+colors_seg = [ACCENT if i % 2 == 0 else '#1A5276' for i in range(len(seg_sorted))]
+bars = ax.barh(seg_sorted.index, seg_sorted.values, color=colors_seg)
+for bar, val in zip(bars, seg_sorted.values):
+    pct = val / total_seg * 100
+    ax.text(val + total_seg * 0.005, bar.get_y() + bar.get_height()/2,
+            f'{int(val):,} ({pct:.1f}%)'.replace(',', ' '),
+            va='center', color='white', fontsize=8)
+ax.set_xlim(right=ax.get_xlim()[1] * 1.18)
 ax.set_title('Распределение продаж по сегментам')
+ax.grid(axis='x', alpha=0.4)
 fig.tight_layout()
 plt.savefig('images/08_segment_sales.png', dpi=150, bbox_inches='tight')
 plt.close()
